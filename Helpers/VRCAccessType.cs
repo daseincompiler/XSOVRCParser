@@ -1,6 +1,6 @@
 ﻿namespace XSOVRCParser.Helpers;
 
-public static class VRCAccessType
+internal static class VRCAccessType
 {
     public enum InstanceAccessType
     {

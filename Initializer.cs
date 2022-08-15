@@ -3,31 +3,42 @@ using System.Text;
 
 namespace XSOVRCParser;
 
-internal class ProgramInitializer
+internal class Initializer
 {
-    public ProgramInitializer()
+    public static DateTime StartUpDateTime;
+    public Initializer()
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        try
         {
-            throw new PlatformNotSupportedException(
-                "Linux is currently NOT supported, feel free to make a PR request if you are a linux user");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                throw new PlatformNotSupportedException(
+                    "Linux is currently NOT supported, feel free to make a PR request if you are a linux user");
+            }
+
+            Console.OutputEncoding = Encoding.UTF8;
+
+            // if (Process.GetProcessesByName("VRChat").Length == 0)
+            // {
+            //     throw new Exception("VRChat isn't running...., launch VRChat and launch this program again..");
+            // }
+
+            VerifyDirectory();
+
+            if (LastWrittenFile == null) throw new NullReferenceException("LastWrittenFile FileInfo is null");
+
+            if (VRCDirectory == null) throw new NullReferenceException("VRCDirectory DirectoryInfo is null");
+
+            var initializeDateTime = DateTime.Now;
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"[{initializeDateTime}] XSOVRCParser by abbey has initialized");
+            StartUpDateTime = initializeDateTime;
         }
-
-        Console.OutputEncoding = Encoding.UTF8;
-
-        // if (Process.GetProcessesByName("VRChat").Length == 0)
-        // {
-        //     throw new Exception("VRChat isn't running...., launch VRChat and launch this program again..");
-        // }
-
-        VerifyDirectory();
-
-        if (LastWrittenFile == null) throw new NullReferenceException("LastWrittenFile FileInfo is null");
-
-        if (VRCDirectory == null) throw new NullReferenceException("VRCDirectory DirectoryInfo is null");
-
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"[{DateTime.Now}] XSOVRCParser by abbey has initialized");
+        catch (Exception e)
+        {
+            throw new Exception(e.ToString());
+        }
     }
 
     public FileInfo LastWrittenFile;

@@ -1,6 +1,7 @@
 ﻿using XSOVRCParser;
+using XSOVRCParser.Helpers;
 
-var pIn = new ProgramInitializer();
+var pIn = new Initializer();
 
 VRCEventHandler.AssignEvents();
 
@@ -19,9 +20,9 @@ using var sr = new StreamReader(fs);
         if (s != null)
         {
             var sanitizedString = s.Trim();
-            VRCEventHandler.GetEvents(sanitizedString);
             var inputType = XSOLog.GetInputType(sanitizedString, out var outputToPrint);
             XSOLog.ConsoleWrite(inputType, outputToPrint);
+            VRCEvents.GetEvents(sanitizedString);
         }
         else
             wh.WaitOne(1000);
