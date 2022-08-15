@@ -58,7 +58,7 @@ internal static class XSOLog
         // PrintError(match);
     }
 
-    public static void PrintLog(Match regexMatch, ConsoleColor consoleColor = ConsoleColor.Cyan)
+    public static void PrintLog(Match regexMatch, string dateTime, ConsoleColor consoleColor = ConsoleColor.Cyan)
     {
         if (regexMatch == null) throw new NullReferenceException("Regex Match is null");
 
@@ -74,10 +74,12 @@ internal static class XSOLog
 
     public static void PrintLog(string value, ConsoleColor consoleColor)
     {
-        Log.AppendLine($"[{DateTime.Now}/PrintLog]: {value}\n");
+        var currentTime = DateTime.Now.ToLocalTime();
+
+        Log.AppendLine($"[{currentTime}/PrintLog]: {value}\n");
 
         Console.ForegroundColor = consoleColor;
-        Console.WriteLine($"[{DateTime.Now}] {value}");
+        Console.WriteLine($"[{currentTime}] {value}\n");
     }
 
     private static void PrintError(string text)

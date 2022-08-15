@@ -5,6 +5,8 @@ namespace XSOVRCParser;
 
 internal static class VRCEventHandler
 {
+    private static readonly VRChatEvents VRCEvents = new();
+
     private static RoomInformation _roomInformation;
 
     private static string? _localDisplayName;
@@ -21,14 +23,16 @@ internal static class VRCEventHandler
         {
             var match = Regex.Match(s, @"User Authenticated: (.+)");
 
+            var displayName = match.Groups[1].Value;
+
             XSOLog.PrintLog(match);
 
-            _localDisplayName = match.Groups[1].Value;
+            _localDisplayName = displayName;
         };
 
         VRChatEvents.ServerVersion += s => XSOLog.PrintLog(Regex.Match(s, @"server version: (.+)\S"));
 
-        VRChatEvents.ConnectedToMaster += s =>
+        VRChatEvents.SwitchingToNetwork += s =>
         {
             var match = Regex.Match(s, @"Switching to network region (.+)").Groups[1];
 
@@ -37,16 +41,27 @@ internal static class VRCEventHandler
             _roomInformation.Region = region;
         };
 
-        VRChatEvents.EnteredRoom += s =>
+        VRChatEvents.EnteringRoom += s =>
         {
             var match = Regex.Match(s, @"Entering Room: (.+)");
 
             _roomInformation.RoomName = match.Groups[1].Value;
         };
 
+        VRChatEvents.JoiningRoom += s =>
+        {
+            var instanceId = Regex.Match(s, @"Joining (.+)").Groups[1].Value;
+
+            _roomInformation.InstanceId = instanceId;
+
+            var accessType = VRCAccessType.GetAccessType(instanceId);
+
+            _roomInformation.AccessType = accessType.TranslateAccessType();
+        }; 
+
         VRChatEvents.SuccessJoinedRoom += () =>
         {
-            XSOLog.PrintLog($"Successfully joined: {_roomInformation.RoomName}, Region: {_roomInformation.Region}",
+            XSOLog.PrintLog($"Joined Instance: {_roomInformation.RoomName} -> {_roomInformation.InstanceId}",
                 ConsoleColor.Cyan);
             _shouldLog = true;
         };
@@ -66,9 +81,10 @@ internal static class VRCEventHandler
 
             if (displayName == _localDisplayName) return;
 
-            _pseudoHardMax = 2 * _lastPlayerCount;
+            if (_lastPlayerCount >= 40) _pseudoHardMax = 80;
+            else _pseudoHardMax = 2 * _lastPlayerCount;
 
-            XSOLog.PrintLog($"Player [{_lastPlayerCount}/{_pseudoHardMax}] joined: {displayName}", ConsoleColor.White);
+            XSOLog.PrintLog($"[{_lastPlayerCount}/{_pseudoHardMax}] {displayName} has joined", ConsoleColor.White);
         };
 
         VRChatEvents.PlayerLeft += s =>
@@ -79,21 +95,24 @@ internal static class VRCEventHandler
 
             if (string.IsNullOrEmpty(match.Value)) return;
 
+            if (_lastPlayerCount == 0) return;
+
             _lastPlayerCount--;
 
             var displayName = match.Groups[1].Value;
 
             if (displayName == _localDisplayName) return;
 
-            _pseudoHardMax = 2 * _lastPlayerCount;
+            if (_lastPlayerCount >= 40) _pseudoHardMax = 80;
+            else _pseudoHardMax = 2 * _lastPlayerCount;
 
-            XSOLog.PrintLog($"Player [{_lastPlayerCount}/{_pseudoHardMax}] left: {displayName}", ConsoleColor.White);
+            XSOLog.PrintLog($"[{_lastPlayerCount}/{_pseudoHardMax}] {displayName} has left", ConsoleColor.White);
         };
 
-        VRChatEvents.LeftRoom += s =>
+        VRChatEvents.LeftRoom += () =>
         {
-            var match = Regex.Match(s, @"Behaviour] (.+)").Groups[1];
-            XSOLog.PrintLog(match);
+            XSOLog.PrintLog($"Left Instance: {_roomInformation.RoomName} -> {_roomInformation.InstanceId}",
+                ConsoleColor.Cyan);
             _shouldLog = false;
             _lastPlayerCount = 0;
         };
@@ -113,25 +132,27 @@ internal static class VRCEventHandler
         {
             case { } behaviour when behaviour.Contains("[Behaviour]"):
 
-                if (behaviour.Contains("User Authenticated:")) VRChatEvents.OnUserAuthenticated(input);
+                if (behaviour.Contains("User Authenticated:")) VRCEvents.OnUserAuthenticated(input);
 
-                if (behaviour.Contains("Using network server version:")) VRChatEvents.OnServerVersion(input);
+                if (behaviour.Contains("Using network server version:")) VRCEvents.OnServerVersion(input);
 
-                if (behaviour.Contains("Switching to network")) VRChatEvents.OnConnectedToMaster(input);
+                if (behaviour.Contains("Switching to network")) VRCEvents.OnSwitchingToNetwork(input);
 
-                if (behaviour.Contains("Entering Room:")) VRChatEvents.OnEnteredRoom(input);
+                if (behaviour.Contains("Entering Room:")) VRCEvents.OnEnteringRoom(input);
 
-                if (behaviour.Contains("Successfully joined room")) VRChatEvents.OnSuccessJoinedRoom();
+                if (behaviour.Contains("Joining wrld_")) VRCEvents.OnJoiningRoom(input);
 
-                if (behaviour.Contains("OnPlayerJoined")) VRChatEvents.OnPlayerJoined(input);
+                if (behaviour.Contains("Successfully joined room")) VRCEvents.OnSuccessJoinedRoom();
 
-                if (behaviour.Contains("OnPlayerLeft")) VRChatEvents.OnPlayerLeft(input);
+                if (behaviour.Contains("OnPlayerJoined")) VRCEvents.OnPlayerJoined(input);
 
-                if (behaviour.Contains("OnLeftRoom")) VRChatEvents.OnLeftRoom(input);
+                if (behaviour.Contains("OnPlayerLeft")) VRCEvents.OnPlayerLeft(input);
+
+                if (behaviour.Contains("OnLeftRoom")) VRCEvents.OnLeftRoom();
                 break;
 
             case "VRCApplication: OnApplicationQuit a":
-                VRChatEvents.OnApplicationQuit(input);
+                VRCEvents.OnApplicationQuit(input);
                 break;
         }
     }
@@ -139,6 +160,8 @@ internal static class VRCEventHandler
     private struct RoomInformation
     {
         public string RoomName;
+        public string InstanceId;
+        public string AccessType;
         public string Region;
     }
 }
