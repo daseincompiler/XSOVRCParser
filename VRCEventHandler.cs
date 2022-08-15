@@ -1,17 +1,10 @@
 ﻿using System.Text.RegularExpressions;
 using XSOVRCParser.Helpers;
-using DateTime = System.DateTime;
 
 namespace XSOVRCParser;
 
 internal static class VRCEventHandler
 {
-    private struct RoomInformation
-    {
-        public string RoomName;
-        public string Region;
-    }
-
     private static RoomInformation _roomInformation;
 
     private static string? _localDisplayName;
@@ -42,7 +35,7 @@ internal static class VRCEventHandler
             var region = match.Value;
 
             _roomInformation.Region = region;
-        }; 
+        };
 
         VRChatEvents.EnteredRoom += s =>
         {
@@ -53,7 +46,8 @@ internal static class VRCEventHandler
 
         VRChatEvents.SuccessJoinedRoom += () =>
         {
-            XSOLog.PrintLog($"Successfully joined: {_roomInformation.RoomName}, Region: {_roomInformation.Region}", ConsoleColor.Cyan);
+            XSOLog.PrintLog($"Successfully joined: {_roomInformation.RoomName}, Region: {_roomInformation.Region}",
+                ConsoleColor.Cyan);
             _shouldLog = true;
         };
 
@@ -115,23 +109,36 @@ internal static class VRCEventHandler
 
     public static void GetEvents(string input)
     {
-        //if you know a better way to do this let me know
-        if(input.Contains("[Behaviour] User Authenticated:")) VRChatEvents.OnUserAuthenticated(input);
+        switch (input)
+        {
+            case { } behaviour when behaviour.Contains("[Behaviour]"):
 
-        if(input.Contains("[Behaviour] Using network server version:")) VRChatEvents.OnServerVersion(input);
+                if (behaviour.Contains("User Authenticated:")) VRChatEvents.OnUserAuthenticated(input);
 
-        if(input.Contains("[Behaviour] Switching to network")) VRChatEvents.OnConnectedToMaster(input);
+                if (behaviour.Contains("Using network server version:")) VRChatEvents.OnServerVersion(input);
 
-        if(input.Contains("[Behaviour] Entering Room:")) VRChatEvents.OnEnteredRoom(input);
+                if (behaviour.Contains("Switching to network")) VRChatEvents.OnConnectedToMaster(input);
 
-        if(input.Contains("[Behaviour] Successfully joined room")) VRChatEvents.OnSuccessJoinedRoom();
+                if (behaviour.Contains("Entering Room:")) VRChatEvents.OnEnteredRoom(input);
 
-        if(input.Contains("[Behaviour] OnPlayerJoined")) VRChatEvents.OnPlayerJoined(input);
+                if (behaviour.Contains("Successfully joined room")) VRChatEvents.OnSuccessJoinedRoom();
 
-        if(input.Contains("[Behaviour] OnPlayerLeft")) VRChatEvents.OnPlayerLeft(input);
+                if (behaviour.Contains("OnPlayerJoined")) VRChatEvents.OnPlayerJoined(input);
 
-        if(input.Contains("[Behaviour] OnLeftRoom")) VRChatEvents.OnLeftRoom(input);
+                if (behaviour.Contains("OnPlayerLeft")) VRChatEvents.OnPlayerLeft(input);
 
-        if(input.Contains("VRCApplication: OnApplicationQuit at")) VRChatEvents.OnApplicationQuit(input);
+                if (behaviour.Contains("OnLeftRoom")) VRChatEvents.OnLeftRoom(input);
+                break;
+
+            case "VRCApplication: OnApplicationQuit a":
+                VRChatEvents.OnApplicationQuit(input);
+                break;
+        }
+    }
+
+    private struct RoomInformation
+    {
+        public string RoomName;
+        public string Region;
     }
 }

@@ -55,7 +55,7 @@ internal static class XSOLog
 
         if (string.IsNullOrEmpty(match)) return;
 
-        PrintError(match);
+        // PrintError(match);
     }
 
     public static void PrintLog(Match regexMatch, ConsoleColor consoleColor = ConsoleColor.Cyan)
@@ -77,7 +77,7 @@ internal static class XSOLog
         Log.AppendLine($"[{DateTime.Now}/PrintLog]: {value}\n");
 
         Console.ForegroundColor = consoleColor;
-        Console.WriteLine($"[{DateTime.Now}] {value}\n");
+        Console.WriteLine($"[{DateTime.Now}] {value}");
     }
 
     private static void PrintError(string text)
@@ -85,7 +85,7 @@ internal static class XSOLog
         Log.AppendLine($"[{DateTime.Now}/PrintError]: {text}\n");
 
         Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"[{DateTime.Now}] {text}\n");
+        Console.WriteLine($"[{DateTime.Now}] {text}");
     }
 
     private static void PrintWarning(string text)
