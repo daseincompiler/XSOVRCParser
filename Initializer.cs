@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace XSOVRCParser;
@@ -29,11 +30,10 @@ internal class Initializer
 
             if (VRCDirectory == null) throw new NullReferenceException("VRCDirectory DirectoryInfo is null");
 
-            var initializeDateTime = DateTime.Now;
+            StartUpDateTime = DateTime.Now;
 
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"[{initializeDateTime}] XSOVRCParser by abbey has initialized");
-            StartUpDateTime = initializeDateTime;
+            Console.WriteLine($"[{StartUpDateTime}] XSOVRCParser by abbey has initialized");
         }
         catch (Exception e)
         {

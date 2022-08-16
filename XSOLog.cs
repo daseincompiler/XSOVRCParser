@@ -96,6 +96,9 @@ internal static class XSOLog
         if (!DateTime.TryParse(_logDateTime, out var dateTime))
             throw new Exception("Failed to parse logDateTime to dateTime");
 
+        //might be inaccurate maybe?
+        XSONotifications.ShouldNotify = Initializer.StartUpDateTime.Minute.Equals(dateTime.Minute);
+
         Log.AppendLine($"[{dateTime}/PrintLog]: {value}\n");
 
         Console.ForegroundColor = consoleColor;

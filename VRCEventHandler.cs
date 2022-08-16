@@ -5,7 +5,7 @@ namespace XSOVRCParser;
 
 internal static class VRCEventHandler
 {
-    private static readonly VRCEvents VRCEvents = new();
+    private static readonly XSOConfiguration XSOConfig = new();
 
     private static RoomInformation _roomInformation;
 
@@ -45,7 +45,7 @@ internal static class VRCEventHandler
         {
             var match = Regex.Match(s, @"Entering Room: (.+)");
 
-            _roomInformation.RoomName = match.Groups[1].Value;
+            _roomInformation.RoomName = match.Groups[1].Value.Trim();
         };
 
         VRCEvents.OnJoiningRoom += s =>
@@ -63,6 +63,13 @@ internal static class VRCEventHandler
         {
             XSOLog.PrintLog($"Joined Instance: {_roomInformation.RoomName} -> {_roomInformation.InstanceId}",
                 ConsoleColor.Cyan);
+
+            var parsedInstanceId = _roomInformation.InstanceId.Split(':')[1];
+            if (parsedInstanceId.Contains("~")) parsedInstanceId = parsedInstanceId.Split('~')[0];
+
+            XSONotifications.SendNotification($"{_roomInformation.RoomName}" ,
+                $"InstanceId: {parsedInstanceId}, AccessType: {_roomInformation.AccessType}, Region: {_roomInformation.Region}", XSOConfig.JoinedInstanceIconPath);
+
             _shouldLog = true;
         };
 

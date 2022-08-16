@@ -7,4 +7,16 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Remove="Resources\world.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\world.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="XSNotifications" Version="0.1.2" />
+  </ItemGroup>
+
 </Project>
