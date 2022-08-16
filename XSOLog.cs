@@ -9,12 +9,6 @@ internal static class XSOLog
 
     private static string _logDateTime = null!, _warningDateTime = null!, _errorDateTime = null!;
 
-    private static readonly string[] RegexMatches = {
-        @"\d (?:Log)",
-        @"\d (?:Warning)",
-        @"\d (?:Error)"
-    };
-
     public enum InputType
     {
         Log,
@@ -26,19 +20,19 @@ internal static class XSOLog
     // TODO: fails to get anything that's more than one line because of the current regex
     public static InputType GetInputType(string text, out string toPrint)
     {
-        if (Regex.IsMatch(text, RegexMatches[0]))
+        if (text.Contains("Log"))
         {
             toPrint = text;
             return InputType.Log;
         }
 
-        if (Regex.IsMatch(text, RegexMatches[1]))
+        if (text.Contains("Warning"))
         {
             toPrint = text;
             return InputType.Warning;
         }
 
-        if (Regex.IsMatch(text, RegexMatches[2]))
+        if (text.Contains("Error"))
         {
             toPrint = text;
             return InputType.Error;
@@ -53,42 +47,35 @@ internal static class XSOLog
         switch (inputType)
         {
             case InputType.Log:
-                _logDateTime = Regex.Match(s, @"(.+) Log").Groups[1].Value;
+                _logDateTime = Regex.Match(s, @"(.+\S) Log").Groups[1].Value;
                 break;
 
             case InputType.Warning:
-                _warningDateTime = Regex.Match(s, @"(.+) Warning").Groups[1].Value;
+                _warningDateTime = Regex.Match(s, @"(.+\S) Warning").Groups[1].Value;
                 break;
 
             case InputType.Error:
-                _errorDateTime = Regex.Match(s, @"(.+) Error").Groups[1].Value;
+                _errorDateTime = Regex.Match(s, @"(.+\S) Error").Groups[1].Value;
                 break;
 
             default:
-                throw new ArgumentOutOfRangeException(nameof(inputType), inputType, null);
+                throw new ArgumentOutOfRangeException(nameof(inputType), inputType, "inputType is out of range");
         }
 
-        if (inputType != InputType.Error) return;
-
         var match = Regex.Match(s, @"Error *- *(.+)").Groups[1].Value;
-
+        
         if (string.IsNullOrEmpty(match)) return;
-
-        // PrintError(match);
+        
+        if (match.Contains("AmplitudeAPI") || match.Contains("cdp.cloud.unity3d.com") || match.Contains("[API]")) return;
+        
+        PrintError(match);
     }
 
-    public static void PrintLog(Match regexMatch, string dateTime, ConsoleColor consoleColor = ConsoleColor.Cyan)
+    public static void PrintLog(Match regexMatch, ConsoleColor consoleColor = ConsoleColor.Cyan)
     {
         if (regexMatch == null) throw new NullReferenceException("Regex Match is null");
 
         PrintLog(regexMatch.Value, consoleColor);
-    }
-
-    public static void PrintLog(Group group, ConsoleColor consoleColor = ConsoleColor.Cyan)
-    {
-        if (group == null) throw new NullReferenceException("Regex Group is null");
-
-        PrintLog(group.Value, consoleColor);
     }
 
     public static void PrintLog(string value, ConsoleColor consoleColor)
@@ -102,7 +89,7 @@ internal static class XSOLog
         Log.AppendLine($"[{dateTime}/PrintLog]: {value}\n");
 
         Console.ForegroundColor = consoleColor;
-        Console.WriteLine($"[{dateTime}] {value}\n");
+        Console.WriteLine($"{dateTime} Log - {value}\n");
     }
 
     private static void PrintError(string text)
@@ -113,7 +100,7 @@ internal static class XSOLog
         Log.AppendLine($"[{dateTime}/PrintError]: {text}\n");
 
         Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"[{dateTime}] {text}\n");
+        Console.WriteLine($"{dateTime} Error - {text}\n");
     }
 
     private static void PrintWarning(string text)
