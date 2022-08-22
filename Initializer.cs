@@ -1,12 +1,15 @@
-﻿using System.Globalization;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Text;
+using XSOVRCParser.Helpers;
 
 namespace XSOVRCParser;
 
 internal class Initializer
 {
     public static DateTime StartUpDateTime;
+
+    public AutoResetEvent? AutoResetEvent;
+
     public Initializer()
     {
         try
@@ -26,14 +29,14 @@ internal class Initializer
 
             VerifyDirectory();
 
-            if (LastWrittenFile == null) throw new NullReferenceException("LastWrittenFile FileInfo is null");
+            if (_lastWrittenFile == null) throw new NullReferenceException("LastWrittenFile FileInfo is null");
 
             if (VRCDirectory == null) throw new NullReferenceException("VRCDirectory DirectoryInfo is null");
 
             StartUpDateTime = DateTime.Now;
 
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"[{StartUpDateTime}] XSOVRCParser by abbey has initialized");
+            Console.WriteLine($"XSOVRCParser by abbey has initialized at {StartUpDateTime}");
         }
         catch (Exception e)
         {
@@ -41,7 +44,7 @@ internal class Initializer
         }
     }
 
-    public FileInfo LastWrittenFile;
+    private FileInfo _lastWrittenFile;
     public DirectoryInfo VRCDirectory;
 
     private void VerifyDirectory()
@@ -56,14 +59,54 @@ internal class Initializer
             {
                 Console.WriteLine($"File {i}: {files[i].Name}");
             }
-            LastWrittenFile = files.OrderByDescending(f => f.LastWriteTime)
+            _lastWrittenFile = files.OrderByDescending(f => f.LastWriteTime)
                 .First();
-            Console.WriteLine("Latest written file: " + LastWrittenFile.Name);
+            Console.WriteLine("Latest written file: " + _lastWrittenFile.Name);
         }
         catch (Exception e)
         {
             throw new Exception("An exception occurred while trying to verify VRChat's directory", e);
         }
+    }
+
+    public void CreateFileStream()
+    {
+        var fs = new FileStream(_lastWrittenFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var sr = new StreamReader(fs);
+        {
+            while (true)
+            {
+                var s = sr.ReadLine();
+                if (s != null)
+                {
+                    var inputType = XSOLog.GetInputType(s.Trim(), out var outputToPrint);
+                    XSOLog.ConsoleWrite(inputType, outputToPrint);
+                    VRCEvents.GetEvents(outputToPrint);
+                }
+                else
+                    AutoResetEvent?.WaitOne(1000);
+            }
+        }
+        // ReSharper disable once FunctionNeverReturns
+    }
+
+    public void WatchFolder()
+    {
+        var files = VRCDirectory.GetFiles();
+
+        //https://stackoverflow.com/a/1179987
+        var lastWritten = (from f in files
+            orderby f.LastWriteTime descending
+            select f).First();
+
+        if (lastWritten.Name == _lastWrittenFile.Name) return;
+
+        _lastWrittenFile = files.OrderByDescending(f => f.LastWriteTime)
+            .First();
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine("Discovered new written file: " + _lastWrittenFile.Name);
+
+        CreateFileStream();
     }
 
     private static DirectoryInfo GetVRChatDirectory()

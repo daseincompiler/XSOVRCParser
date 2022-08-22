@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using XSNotifications;
+﻿using XSNotifications;
 using XSNotifications.Enum;
 
 namespace XSOVRCParser;
@@ -10,14 +9,9 @@ internal static class XSONotifications
 
     private static readonly XSNotifier XsNotifier = new();
 
-    private static bool Notify()
+    public static void SendNotification(string title, string? content, string icon = "default")
     {
-        return Process.GetProcessesByName("XSOverlay").Length != 0 && ShouldNotify;
-    }
-
-    public static void SendNotification(string title, string content, string icon = "default")
-    {
-        if (!Notify()) return;
+        if (!ShouldNotify) return;
 
         XsNotifier.SendNotification(new XSNotification
         {

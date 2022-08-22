@@ -64,13 +64,13 @@ internal static class VRCEventHandler
             XSOLog.PrintLog($"Joined Instance: {_roomInformation.RoomName} -> {_roomInformation.InstanceId}",
                 ConsoleColor.Cyan);
 
+            _shouldLog = true;
+
             var parsedInstanceId = _roomInformation.InstanceId.Split(':')[1];
             if (parsedInstanceId.Contains("~")) parsedInstanceId = parsedInstanceId.Split('~')[0];
 
-            XSONotifications.SendNotification($"{_roomInformation.RoomName}" ,
+            XSONotifications.SendNotification($"{_roomInformation.RoomName}",
                 $"InstanceId: {parsedInstanceId}, AccessType: {_roomInformation.AccessType}, Region: {_roomInformation.Region}", XSOConfig.JoinedInstanceIconPath);
-
-            _shouldLog = true;
         };
 
         VRCEvents.OnPlayerJoined += s =>
@@ -92,6 +92,9 @@ internal static class VRCEventHandler
             else _pseudoHardMax = 2 * _lastPlayerCount;
 
             XSOLog.PrintLog($"[{_lastPlayerCount}/{_pseudoHardMax}] {displayName} has joined", ConsoleColor.White);
+
+            XSONotifications.SendNotification($"[{_lastPlayerCount}/{_pseudoHardMax}] {displayName} has joined",
+                null, XSOConfig.PlayerJoinedInstancePath);
         };
 
         VRCEvents.OnPlayerLeft += s =>
@@ -114,6 +117,9 @@ internal static class VRCEventHandler
             else _pseudoHardMax = 2 * _lastPlayerCount;
 
             XSOLog.PrintLog($"[{_lastPlayerCount}/{_pseudoHardMax}] {displayName} has left", ConsoleColor.White);
+
+            XSONotifications.SendNotification($"[{_lastPlayerCount}/{_pseudoHardMax}] {displayName} has left",
+                null, XSOConfig.PlayerLeftIconPath);
         };
 
         VRCEvents.OnLeftRoom += () =>

@@ -8,10 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\join.png" />
+    <None Remove="Resources\logout.png" />
     <None Remove="Resources\world.png" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\join.png" />
+    <EmbeddedResource Include="Resources\logout.png" />
     <EmbeddedResource Include="Resources\world.png" />
   </ItemGroup>
 
