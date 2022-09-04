@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Drawing.Text;
+using System.Text.RegularExpressions;
 using XSOVRCParser.Helpers;
 
 namespace XSOVRCParser;
@@ -17,10 +18,13 @@ internal static class VRCEventHandler
 
     private static int _pseudoHardMax;
 
+    private static readonly List<string> Players = new();
+
     public static void AssignEvents()
     {
         VRCEvents.OnUserAuthenticated += s =>
         {
+            //can fail if a user has been logged out and even if you re-login again it seems to not get output log'd anymore for some reason
             var match = Regex.Match(s, @"User Authenticated: (.+)");
 
             var displayName = match.Groups[1].Value;
@@ -73,6 +77,8 @@ internal static class VRCEventHandler
                 $"InstanceId: {parsedInstanceId}, AccessType: {_roomInformation.AccessType}, Region: {_roomInformation.Region}", XSOConfig.JoinedInstanceIconPath);
         };
 
+        bool hasSentGroup = false;
+
         VRCEvents.OnPlayerJoined += s =>
         {
             //might be a useless check, but just in case
@@ -88,13 +94,25 @@ internal static class VRCEventHandler
 
             if (displayName == _localDisplayName) return;
 
+            Players.Add(displayName);
+
             if (_lastPlayerCount >= 40) _pseudoHardMax = 80;
             else _pseudoHardMax = 2 * _lastPlayerCount;
 
             XSOLog.PrintLog($"[{_lastPlayerCount}/{_pseudoHardMax}] {displayName} has joined", ConsoleColor.White);
 
-            XSONotifications.SendNotification($"[{_lastPlayerCount}/{_pseudoHardMax}] {displayName} has joined",
-                null, XSOConfig.PlayerJoinedInstancePath);
+            if (_lastPlayerCount >= 5)
+            {
+                if (hasSentGroup) return;
+                XSONotifications.SendNotification($"[{_lastPlayerCount}/{_pseudoHardMax}] Group Join:",
+                    string.Join(", ", Players), XSOConfig.PlayerJoinedInstancePath);
+                hasSentGroup = true;
+            }
+            else
+            {
+                XSONotifications.SendNotification($"[{_lastPlayerCount}/{_pseudoHardMax}] {displayName} has joined",
+                    null, XSOConfig.PlayerJoinedInstancePath);
+            }
         };
 
         VRCEvents.OnPlayerLeft += s =>
@@ -113,13 +131,23 @@ internal static class VRCEventHandler
 
             if (displayName == _localDisplayName) return;
 
+            Players.Remove(displayName);
+
             if (_lastPlayerCount >= 40) _pseudoHardMax = 80;
             else _pseudoHardMax = 2 * _lastPlayerCount;
 
             XSOLog.PrintLog($"[{_lastPlayerCount}/{_pseudoHardMax}] {displayName} has left", ConsoleColor.White);
 
-            XSONotifications.SendNotification($"[{_lastPlayerCount}/{_pseudoHardMax}] {displayName} has left",
-                null, XSOConfig.PlayerLeftIconPath);
+            if (Players.Count >= 5)
+            {
+                XSONotifications.SendNotification($"[{_lastPlayerCount}/{_pseudoHardMax}] Group Leave:",
+                    string.Join(", ", Players), XSOConfig.PlayerLeftIconPath);
+            }
+            else
+            {
+                XSONotifications.SendNotification($"[{_lastPlayerCount}/{_pseudoHardMax}] {displayName} has left",
+                    null, XSOConfig.PlayerLeftIconPath);
+            }
         };
 
         VRCEvents.OnLeftRoom += () =>
@@ -128,6 +156,7 @@ internal static class VRCEventHandler
                 ConsoleColor.Cyan);
             _shouldLog = false;
             _lastPlayerCount = 0;
+            Players.Clear();
         };
 
         VRCEvents.OnApplicationQuit += s =>

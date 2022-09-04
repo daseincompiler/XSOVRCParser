@@ -1,4 +1,6 @@
-﻿namespace XSOVRCParser.Helpers;
+﻿using System.Reflection;
+
+namespace XSOVRCParser.Helpers;
 
 internal class XSOConfiguration
 {
@@ -9,8 +11,10 @@ internal class XSOConfiguration
     public XSOConfiguration()
     {
         // I am really confused how do these work with mister bee's nuget package, so I need to ask him later..
-        JoinedInstanceIconPath = @"";
-        PlayerJoinedInstancePath = @"";
-        PlayerLeftIconPath = @"";
+        JoinedInstanceIconPath = GetLocalResourcePath(@"\Resources/world.png");
+        PlayerJoinedInstancePath = GetLocalResourcePath(@"\Resources/join.png");
+        PlayerLeftIconPath = GetLocalResourcePath(@"\Resources/leave.png");
     }
+
+    private static string GetLocalResourcePath(string path) => Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location) + path;
 }

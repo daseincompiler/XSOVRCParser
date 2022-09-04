@@ -11,7 +11,7 @@ internal static class XSONotifications
 
     public static void SendNotification(string title, string? content, string icon = "default")
     {
-        if (!ShouldNotify) return;
+        // if (!ShouldNotify) return;
 
         XsNotifier.SendNotification(new XSNotification
         {
