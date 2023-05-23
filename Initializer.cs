@@ -1,4 +1,6 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Net.Sockets;
+using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 using XSOVRCParser.Helpers;
 

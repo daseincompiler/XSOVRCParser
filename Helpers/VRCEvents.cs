@@ -18,13 +18,13 @@ public static class VRCEvents
 
     public static event Action<string> OnPlayerJoined = null!;
 
-    public static event Action<string> OnPlayerSwitchedAvatar = null;
+    public static event Action<string> OnPlayerSwitchedAvatar = null!;
 
     public static event Action<string> OnPlayerLeft = null!;
 
     public static event Action OnLeftRoom = null!;
 
-    public static event Action<string> OnDisconnected = null;
+    public static event Action<string> OnDisconnected = null!;
 
     public static event Action<string> OnApplicationQuit = null!;
 

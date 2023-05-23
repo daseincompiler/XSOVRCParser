@@ -9,7 +9,8 @@ internal static class XSOLog
 
     private static string _logDateTime = null!, _warningDateTime = null!, _errorDateTime = null!;
 
-    private static string[] ignoredErrors = { "AmplitudeAPI", "cdp.cloud.unity3d.com", "[API]", "Curl error 42", "[AVProVideo]" };
+    private static string[] ignoredErrors = { "AmplitudeAPI", "cdp.cloud.unity3d.com", "[API]", "Curl error", 
+        "[AVProVideo]", "NewFeatureCallouts", "Failed to get texture", "Error auto blending a playable at slot", "Can't push runtime controller onto a null avatar animator" };
 
     public enum InputType
     {

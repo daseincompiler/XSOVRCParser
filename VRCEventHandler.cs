@@ -122,6 +122,10 @@ internal static class VRCEventHandler
 
             if (string.IsNullOrEmpty(match.Value)) return;
 
+            if (match.Value.Contains(_localDisplayName)) return;
+
+            OSCMessage.sendChatBox(match.Value);
+
             XSOLog.PrintLog($"{match.Value}", ConsoleColor.Cyan);
         };
 
