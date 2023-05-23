@@ -18,6 +18,8 @@ public static class VRCEvents
 
     public static event Action<string> OnPlayerJoined = null!;
 
+    public static event Action<string> OnPlayerSwitchedAvatar = null;
+
     public static event Action<string> OnPlayerLeft = null!;
 
     public static event Action OnLeftRoom = null!;
@@ -43,6 +45,8 @@ public static class VRCEvents
                 if (behaviour.Contains("Successfully joined room")) OnSuccessJoinedRoom();
 
                 if (behaviour.Contains("OnPlayerJoined")) OnPlayerJoined(input);
+
+                if (behaviour.Contains("to avatar")) OnPlayerSwitchedAvatar(input);
 
                 if (behaviour.Contains("OnPlayerLeft")) OnPlayerLeft(input);
 

@@ -115,6 +115,16 @@ internal static class VRCEventHandler
             }
         };
 
+        VRCEvents.OnPlayerSwitchedAvatar += s => { 
+            if (!_shouldLog) return;
+
+            var match = Regex.Match(s, @"Switching (.+)");
+
+            if (string.IsNullOrEmpty(match.Value)) return;
+
+            XSOLog.PrintLog($"{match.Value}", ConsoleColor.Cyan);
+        };
+
         VRCEvents.OnPlayerLeft += s =>
         {
             if (!_shouldLog) return;

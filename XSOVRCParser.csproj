@@ -3,14 +3,14 @@
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<PublishTrimmed>true</PublishTrimmed>
-		<TargetFramework>net6.0-windows</TargetFramework>
+		<TargetFramework>net7.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<EnforceCodeStyleInBuild>False</EnforceCodeStyleInBuild>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="XSNotifications" Version="0.1.2" />
+	  <PackageReference Include="XSNotifications" Version="0.1.2" />
 	</ItemGroup>
 
 	<ItemGroup>
