@@ -12,7 +12,7 @@ public static class VRCEvents
 
     public static event Action<string> OnEnteringRoom = null!;
 
-    public static event Action<string> OnJoiningRoom = null!; 
+    public static event Action<string> OnJoiningRoom = null!;
 
     public static event Action OnSuccessJoinedRoom = null!;
 
@@ -24,7 +24,11 @@ public static class VRCEvents
 
     public static event Action OnLeftRoom = null!;
 
+    public static event Action<string> OnDisconnected = null;
+
     public static event Action<string> OnApplicationQuit = null!;
+
+    public const int numberOfEvents = 11;
 
     public static void GetEvents(string input)
     {
@@ -51,6 +55,8 @@ public static class VRCEvents
                 if (behaviour.Contains("OnPlayerLeft")) OnPlayerLeft(input);
 
                 if (behaviour.Contains("OnLeftRoom")) OnLeftRoom();
+
+                if (behaviour.Contains("OnDisconnected")) OnDisconnected(input);
                 break;
 
             case { } applicationQuit when applicationQuit.Contains("VRCApplication: OnApplicationQuit at"):

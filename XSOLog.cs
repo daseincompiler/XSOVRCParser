@@ -9,6 +9,8 @@ internal static class XSOLog
 
     private static string _logDateTime = null!, _warningDateTime = null!, _errorDateTime = null!;
 
+    private static string[] ignoredErrors = { "AmplitudeAPI", "cdp.cloud.unity3d.com", "[API]", "Curl error 42", "[AVProVideo]" };
+
     public enum InputType
     {
         Log,
@@ -63,11 +65,14 @@ internal static class XSOLog
         }
 
         var match = Regex.Match(s, @"Error *- *(.+)").Groups[1].Value;
-        
+
         if (string.IsNullOrEmpty(match)) return;
-        
-        if (match.Contains("AmplitudeAPI") || match.Contains("cdp.cloud.unity3d.com") || match.Contains("[API]")) return;
-        
+
+        for (var i = 0; i < ignoredErrors.Length; i++) 
+        {
+            if (match.Contains(ignoredErrors[i])) return;
+        }
+
         PrintError(match);
     }
 
@@ -80,8 +85,7 @@ internal static class XSOLog
 
     public static void PrintLog(string value, ConsoleColor consoleColor)
     {
-        if (!DateTime.TryParse(_logDateTime, out var dateTime))
-            throw new Exception("Failed to parse logDateTime to dateTime");
+        DateTime.TryParse(_logDateTime, out var dateTime);
 
         // //might be inaccurate maybe?
         // XSONotifications.ShouldNotify = Initializer.StartUpDateTime.Minute.Equals(dateTime.Minute);
@@ -94,8 +98,7 @@ internal static class XSOLog
 
     private static void PrintError(string text)
     {
-        if (!DateTime.TryParse(_errorDateTime, out var dateTime))
-            throw new Exception("Failed to parse errorDateTime to dateTime");
+        DateTime.TryParse(_errorDateTime, out var dateTime);
 
         Log.AppendLine($"[{dateTime}/PrintError]: {text}\n");
 
@@ -105,8 +108,7 @@ internal static class XSOLog
 
     private static void PrintWarning(string text)
     {
-        if (!DateTime.TryParse(_warningDateTime, out var dateTime))
-            throw new Exception("Failed to parse warningDateTime to dateTime");
+        DateTime.TryParse(_warningDateTime, out var dateTime);
 
         Log.AppendLine($"[{dateTime}/PrintWarning]: {text}\n");
 

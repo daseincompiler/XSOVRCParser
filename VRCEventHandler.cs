@@ -1,5 +1,4 @@
-﻿using System.Drawing.Text;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using XSOVRCParser.Helpers;
 
 namespace XSOVRCParser;
@@ -61,7 +60,7 @@ internal static class VRCEventHandler
             var accessType = VRCAccessType.GetAccessType(instanceId);
 
             _roomInformation.AccessType = accessType.TranslateAccessType();
-        }; 
+        };
 
         VRCEvents.OnSuccessJoinedRoom += () =>
         {
@@ -115,7 +114,8 @@ internal static class VRCEventHandler
             }
         };
 
-        VRCEvents.OnPlayerSwitchedAvatar += s => { 
+        VRCEvents.OnPlayerSwitchedAvatar += s =>
+        {
             if (!_shouldLog) return;
 
             var match = Regex.Match(s, @"Switching (.+)");
@@ -167,6 +167,17 @@ internal static class VRCEventHandler
             _shouldLog = false;
             _lastPlayerCount = 0;
             Players.Clear();
+        };
+
+        VRCEvents.OnDisconnected += s =>
+        {
+            if (!_shouldLog) return;
+
+            var match = Regex.Match(s, @"OnDisconnected(.+)");
+
+            if (string.IsNullOrEmpty(match.Value)) return;
+
+            XSOLog.PrintLog($"{match.Value}", ConsoleColor.Red);
         };
 
         VRCEvents.OnApplicationQuit += s =>

@@ -96,8 +96,8 @@ internal class Initializer
 
         //https://stackoverflow.com/a/1179987
         var lastWritten = (from f in files
-            orderby f.LastWriteTime descending
-            select f).First();
+                           orderby f.LastWriteTime descending
+                           select f).First();
 
         if (lastWritten.Name == _lastWrittenFile.Name) return;
 
