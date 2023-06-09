@@ -3,14 +3,15 @@ using System.Text.RegularExpressions;
 
 namespace XSOVRCParser;
 
-internal static class XSOLog
+internal static partial class XSOLog
 {
     public static readonly StringBuilder Log = new();
 
-    private static string _logDateTime = null!, _warningDateTime = null!, _errorDateTime = null!;
+    private static string _logDateTime = null!, _errorDateTime = null!;
 
-    private static string[] ignoredErrors = { "AmplitudeAPI", "cdp.cloud.unity3d.com", "[API]", "Curl error", 
-        "[AVProVideo]", "NewFeatureCallouts", "Failed to get texture", "Error auto blending a playable at slot", "Can't push runtime controller onto a null avatar animator" };
+    private static readonly string[] IgnoredErrors = { "AmplitudeAPI", "cdp.cloud.unity3d.com", "[API]", "Curl error",
+        "[AVProVideo]", "NewFeatureCallouts", "Failed to get texture", "Error auto blending a playable at slot",
+        "Can't push runtime controller onto a null avatar animator", "could not use Station"};
 
     public enum InputType
     {
@@ -47,31 +48,29 @@ internal static class XSOLog
 
     public static void ConsoleWrite(InputType inputType, string s)
     {
+        // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
         switch (inputType)
         {
             case InputType.Log:
-                _logDateTime = Regex.Match(s, @"(.+\S) Log").Groups[1].Value;
+                _logDateTime = LogRegex().Match(s).Groups[1].Value;
                 break;
 
-            case InputType.Warning:
-                _warningDateTime = Regex.Match(s, @"(.+\S) Warning").Groups[1].Value;
-                break;
+            // case InputType.Warning:
+            //     _warningDateTime = Regex.Match(s, @"(.+\S) Warning").Groups[1].Value;
+            //     break;
 
             case InputType.Error:
-                _errorDateTime = Regex.Match(s, @"(.+\S) Error").Groups[1].Value;
+                _errorDateTime = ErrorRegex().Match(s).Groups[1].Value;
                 break;
-
-            default:
-                throw new ArgumentOutOfRangeException(nameof(inputType), inputType, "inputType is out of range");
         }
 
-        var match = Regex.Match(s, @"Error *- *(.+)").Groups[1].Value;
+        var match = ErrorMessageRegex().Match(s).Groups[1].Value;
 
         if (string.IsNullOrEmpty(match)) return;
 
-        for (var i = 0; i < ignoredErrors.Length; i++) 
+        if (IgnoredErrors.Any(t => match.Contains(t)))
         {
-            if (match.Contains(ignoredErrors[i])) return;
+            return;
         }
 
         PrintError(match);
@@ -107,13 +106,12 @@ internal static class XSOLog
         Console.WriteLine($"{dateTime} Error - {text}\n");
     }
 
-    private static void PrintWarning(string text)
-    {
-        DateTime.TryParse(_warningDateTime, out var dateTime);
+    [GeneratedRegex(@"(.+\S) Log")]
+    private static partial Regex LogRegex();
 
-        Log.AppendLine($"[{dateTime}/PrintWarning]: {text}\n");
+    [GeneratedRegex(@"(.+\S) Error")]
+    private static partial Regex ErrorRegex();
 
-        Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine($"[{dateTime}] {text}\n");
-    }
+    [GeneratedRegex(@"Error *- *(.+)")]
+    private static partial Regex ErrorMessageRegex();
 }

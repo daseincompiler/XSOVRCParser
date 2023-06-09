@@ -3,7 +3,7 @@ using XSOVRCParser.Helpers;
 
 namespace XSOVRCParser;
 
-internal static class VRCEventHandler
+internal static partial class VRCEventHandler
 {
     private static readonly XSOConfiguration XSOConfig = new();
 
@@ -17,6 +17,12 @@ internal static class VRCEventHandler
 
     private static int _pseudoHardMax;
 
+    private static string? _lastAvatarSwitched;
+
+    private static bool _shouldLogSwitch;
+
+    private static string? _previousSwitch;
+
     private static readonly List<string> Players = new();
 
     public static void AssignEvents()
@@ -24,7 +30,7 @@ internal static class VRCEventHandler
         VRCEvents.OnUserAuthenticated += s =>
         {
             //can fail if a user has been logged out and even if you re-login again it seems to not get output log'd anymore for some reason
-            var match = Regex.Match(s, @"User Authenticated: (.+)");
+            var match = AuthenticatedRegex().Match(s);
 
             var displayName = match.Groups[1].Value;
 
@@ -37,7 +43,7 @@ internal static class VRCEventHandler
 
         VRCEvents.OnSwitchingToNetwork += s =>
         {
-            var match = Regex.Match(s, @"Switching to network region (.+)").Groups[1];
+            var match = RegionRegex().Match(s).Groups[1];
 
             var region = match.Value;
 
@@ -46,7 +52,7 @@ internal static class VRCEventHandler
 
         VRCEvents.OnEnteringRoom += s =>
         {
-            var match = Regex.Match(s, @"Entering Room: (.+)");
+            var match = EnteringRegex().Match(s);
 
             _roomInformation.RoomName = match.Groups[1].Value.Trim();
         };
@@ -68,15 +74,17 @@ internal static class VRCEventHandler
                 ConsoleColor.Cyan);
 
             _shouldLog = true;
+            _shouldLogSwitch = false;
 
             var parsedInstanceId = _roomInformation.InstanceId.Split(':')[1];
             if (parsedInstanceId.Contains("~")) parsedInstanceId = parsedInstanceId.Split('~')[0];
 
             XSONotifications.SendNotification($"{_roomInformation.RoomName}",
-                $"InstanceId: {parsedInstanceId}, AccessType: {_roomInformation.AccessType}, Region: {_roomInformation.Region}", XSOConfig.JoinedInstanceIconPath);
+                $"InstanceId: {parsedInstanceId}, AccessType: {_roomInformation.AccessType}, Region: {_roomInformation.Region}",
+                XSOConfig.JoinedInstanceIconPath);
         };
 
-        bool hasSentGroup = false;
+        var hasSentGroup = false;
 
         VRCEvents.OnPlayerJoined += s =>
         {
@@ -86,6 +94,8 @@ internal static class VRCEventHandler
             var match = Regex.Match(s, @"OnPlayerJoined (.+)");
 
             if (string.IsNullOrEmpty(match.Value)) return;
+
+            _shouldLogSwitch = true;
 
             _lastPlayerCount++;
 
@@ -116,17 +126,40 @@ internal static class VRCEventHandler
 
         VRCEvents.OnPlayerSwitchedAvatar += s =>
         {
-            if (!_shouldLog) return;
+            if (!_shouldLog || !_shouldLogSwitch) return;
 
             var match = Regex.Match(s, @"Switching (.+)");
 
             if (string.IsNullOrEmpty(match.Value)) return;
 
-            if (match.Value.Contains(_localDisplayName)) return;
+            if (match.Value.Contains(_localDisplayName!)) return;
 
-            OSCMessage.sendChatBox(match.Value);
+            if (match.Value == _previousSwitch) return;
+
+            _previousSwitch = match.Value;
+
+            _lastAvatarSwitched = Regex.Match(match.Value, @"Switching (.+) to").Groups[1].Value;
+
+            OSCMessage.SendChatBox(match.Value);
 
             XSOLog.PrintLog($"{match.Value}", ConsoleColor.Cyan);
+        };
+
+        VRCEvents.OnKeywordsExceeded += s =>
+        {
+            if (!_shouldLog) return;
+
+            var match = Regex.Match(s, @"shader (.+),");
+
+            if (string.IsNullOrEmpty(match.Value)) return;
+
+            if (string.IsNullOrEmpty(_lastAvatarSwitched)) return;
+
+            var thankYouMessage = $"Thanks {_lastAvatarSwitched} for {match}";
+
+            OSCMessage.SendChatBox(thankYouMessage);
+
+            XSOLog.PrintLog($"{match.Value} for {_lastAvatarSwitched}", ConsoleColor.Yellow);
         };
 
         VRCEvents.OnPlayerLeft += s =>
@@ -153,15 +186,11 @@ internal static class VRCEventHandler
             XSOLog.PrintLog($"[{_lastPlayerCount}/{_pseudoHardMax}] {displayName} has left", ConsoleColor.White);
 
             if (Players.Count >= 5)
-            {
                 XSONotifications.SendNotification($"[{_lastPlayerCount}/{_pseudoHardMax}] Group Leave:",
                     string.Join(", ", Players), XSOConfig.PlayerLeftIconPath);
-            }
             else
-            {
                 XSONotifications.SendNotification($"[{_lastPlayerCount}/{_pseudoHardMax}] {displayName} has left",
                     null, XSOConfig.PlayerLeftIconPath);
-            }
         };
 
         VRCEvents.OnLeftRoom += () =>
@@ -200,4 +229,13 @@ internal static class VRCEventHandler
         public string AccessType;
         public string Region;
     }
+
+    [GeneratedRegex(@"User Authenticated: (.+)")]
+    private static partial Regex AuthenticatedRegex();
+
+    [GeneratedRegex(@"Switching to network region (.+)")]
+    private static partial Regex RegionRegex();
+
+    [GeneratedRegex(@"Entering Room: (.+)")]
+    private static partial Regex EnteringRegex();
 }

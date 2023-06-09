@@ -3,22 +3,35 @@ using XSOVRCParser.Helpers;
 
 namespace XSOVRCParser
 {
-    internal class OSCMessage
+    internal abstract class OSCMessage
     {
-        private static UDPSender sender  = new UDPSender(OSCHelper.IP, OSCHelper.Port);
-        public static void sendChatBox(string message)
+        private static readonly UDPSender Sender = new(OSCHelper.Ip, OSCHelper.Port);
+        public static async void SendChatBox(string message)
         {
-            try {
-                var oscTyping = new OscMessage("/chatbox/typing", true);
-                sender.Send(oscTyping);
+            try
+            {
+                if (message.Length > OSCHelper.MaxLength) return;
 
-                var oscMessage = new OscMessage("/chatbox/input", message, true);
-                sender.Send(oscMessage);
+                var oscTyping = new OscMessage("/chatbox/typing", true);
+                Sender.Send(oscTyping);
+
+                var oscMessage = new OscMessage("/chatbox/input", message, true, true);
+                Sender.Send(oscMessage);
+
+                await Task.Delay(10000);
+
+                ClearMessage();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
+        }
+
+        private static void ClearMessage()
+        {
+            Sender.Send(new OscMessage("/chatbox/input", String.Empty, true));
+            Sender.Send(new OscMessage("/chatbox/typing", false));
         }
     }
 }
