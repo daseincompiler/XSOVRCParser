@@ -10,25 +10,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="XSNotifications" Version="0.1.2" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <Reference Include="SharpOSC">
 	    <HintPath>SharpOSC.dll</HintPath>
 	  </Reference>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Update="Resources\join.png">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
-	  <None Update="Resources\logout.png">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
-	  <None Update="Resources\world.png">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
 	</ItemGroup>
 
 </Project>

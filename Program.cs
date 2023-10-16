@@ -1,6 +1,6 @@
 ﻿using XSOVRCParser;
 
-var pIn = new Initializer();
+var pIn = new Initializer(new FileSystemWatcher());
 
 VRCEventHandler.AssignEvents();
 

@@ -1,49 +1,54 @@
-﻿using System.Runtime.InteropServices;
-using System.Text;
+﻿using System.Text;
 using XSOVRCParser.Helpers;
 
 namespace XSOVRCParser;
 
 internal class Initializer
 {
+    private FileInfo _lastWrittenFile;
+    private FileSystemWatcher _watcher;
     public AutoResetEvent? AutoResetEvent;
+    public DirectoryInfo VRCDirectory;
 
-    public Initializer()
+    public Initializer(FileSystemWatcher watcher)
     {
-        try
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                throw new PlatformNotSupportedException(
-                    "Linux is currently NOT supported, feel free to make a PR request if you are a linux user");
-            }
+        _watcher = watcher;
+        Console.OutputEncoding = Encoding.UTF8;
 
-            Console.OutputEncoding = Encoding.UTF8;
+        VerifyDirectory();
 
-            // if (Process.GetProcessesByName("VRChat").Length == 0)
-            // {
-            //     throw new Exception("VRChat isn't running...., launch VRChat and launch this program again..");
-            // }
+        if (_lastWrittenFile == null) throw new NullReferenceException("LastWrittenFile FileInfo is null");
+        if (VRCDirectory == null) throw new NullReferenceException("VRCDirectory DirectoryInfo is null");
 
-            VerifyDirectory();
+        var startUpDateTime = DateTime.Now;
 
-            if (_lastWrittenFile == null) throw new NullReferenceException("LastWrittenFile FileInfo is null");
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine($"XSOVRCParser by abbey has initialized at {startUpDateTime}");
 
-            if (VRCDirectory == null) throw new NullReferenceException("VRCDirectory DirectoryInfo is null");
-
-            var startUpDateTime = DateTime.Now;
-
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"XSOVRCParser by abbey has initialized at {startUpDateTime}");
-        }
-        catch (Exception e)
-        {
-            throw new Exception(e.ToString());
-        }
+        SetupWatcher();
     }
 
-    private FileInfo _lastWrittenFile;
-    public DirectoryInfo VRCDirectory;
+    private void SetupWatcher()
+    {
+        _watcher = new FileSystemWatcher(VRCDirectory.FullName)
+        {
+            NotifyFilter = NotifyFilters.LastAccess | NotifyFilters.LastWrite | NotifyFilters.FileName |
+                           NotifyFilters.DirectoryName,
+            Filter = "*.*"
+        };
+        _watcher.Created += OnNewLogFileDetected;
+        _watcher.EnableRaisingEvents = true;
+    }
+
+    private void OnNewLogFileDetected(object source, FileSystemEventArgs e)
+    {
+        if (e.ChangeType != WatcherChangeTypes.Created) return;
+
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine($"New log detected: {e.FullPath} -> {e.ChangeType}");
+        _lastWrittenFile = new FileInfo(e.FullPath);
+        CreateFileStream();
+    }
 
     private void VerifyDirectory()
     {
@@ -51,14 +56,8 @@ internal class Initializer
         try
         {
             VRCDirectory = GetVRChatDirectory();
-            var files = VRCDirectory.GetFiles();
-            Console.WriteLine($"Found files in total: {files.Length}");
-            for (var i = 0; i < files.Length; i++)
-            {
-                Console.WriteLine($"File {i}: {files[i].Name}");
-            }
-            _lastWrittenFile = files.OrderByDescending(f => f.LastWriteTime)
-                .First();
+            _lastWrittenFile = GetLatestFile(VRCDirectory);
+
             Console.WriteLine("Latest written file: " + _lastWrittenFile.Name);
         }
         catch (Exception e)
@@ -67,11 +66,19 @@ internal class Initializer
         }
     }
 
+    private static FileInfo GetLatestFile(DirectoryInfo directory)
+    {
+        return directory.GetFiles().OrderByDescending(f => f.LastWriteTime).First();
+    }
+
     public void CreateFileStream()
     {
-        var fs = new FileStream(_lastWrittenFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        using var sr = new StreamReader(fs);
+        try
         {
+            using var fs = new FileStream(_lastWrittenFile.FullName, FileMode.Open, FileAccess.Read,
+                FileShare.ReadWrite);
+            using var sr = new StreamReader(fs);
+
             while (true)
             {
                 var s = sr.ReadLine();
@@ -82,25 +89,28 @@ internal class Initializer
                     VRCEvents.GetEvents(outputToPrint);
                 }
                 else
+                {
                     AutoResetEvent?.WaitOne(1000);
+                }
             }
         }
-        // ReSharper disable once FunctionNeverReturns
+        catch (IOException)
+        {
+            // Handle the exception here, for instance:
+            Console.WriteLine("File is locked. Waiting and retrying...");
+            Thread.Sleep(5000); // Wait for 5 seconds
+            CreateFileStream(); // Recursive call (use with caution, consider setting a retry limit)
+        }
     }
+
 
     public void WatchFolder()
     {
-        var files = VRCDirectory.GetFiles();
-
-        //https://stackoverflow.com/a/1179987
-        var lastWritten = (from f in files
-                           orderby f.LastWriteTime descending
-                           select f).First();
+        var lastWritten = GetLatestFile(VRCDirectory);
 
         if (lastWritten.Name == _lastWrittenFile.Name) return;
 
-        _lastWrittenFile = files.OrderByDescending(f => f.LastWriteTime)
-            .First();
+        _lastWrittenFile = lastWritten;
         Console.ForegroundColor = ConsoleColor.White;
         Console.WriteLine("Discovered new written file: " + _lastWrittenFile.Name);
 
@@ -109,10 +119,16 @@ internal class Initializer
 
     private static DirectoryInfo GetVRChatDirectory()
     {
-        var localLowPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData).Replace("Roaming", "LocalLow");
-        var vrchatDirectoryInfo = new DirectoryInfo(localLowPath + "\\VRChat\\VRChat");
+        var localLowPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
+            .Replace("Roaming", "LocalLow");
+        var vrchatDirectoryPath = Path.Combine(localLowPath, "VRChat", "VRChat");
+        var vrchatDirectoryInfo = new DirectoryInfo(vrchatDirectoryPath);
+
         Console.WriteLine("Found VRChat directory path: " + vrchatDirectoryInfo);
-        if (vrchatDirectoryInfo.Exists) return vrchatDirectoryInfo;
-        throw new NullReferenceException("vrchat directory couldn't be found or doesn't exist");
+
+        if (!vrchatDirectoryInfo.Exists)
+            throw new DirectoryNotFoundException("VRChat directory couldn't be found or doesn't exist.");
+
+        return vrchatDirectoryInfo;
     }
 }

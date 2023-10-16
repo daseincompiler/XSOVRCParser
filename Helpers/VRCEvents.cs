@@ -1,69 +1,72 @@
-﻿namespace XSOVRCParser.Helpers;
+﻿#pragma warning disable CS8618
+namespace XSOVRCParser.Helpers;
 
-//made the class public in case someone would like to subscribe to these events
 public static class VRCEvents
 {
-    //https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/null-forgiving
-    public static event Action<string> OnUserAuthenticated = null!;
+    public static event Action<string> OnUserAuthenticated;
 
-    public static event Action<string> OnServerVersion = null!;
+    public static event Action<string> OnServerVersion;
 
-    public static event Action<string> OnSwitchingToNetwork = null!;
+    public static event Action<string> OnSwitchingToNetwork;
 
-    public static event Action<string> OnEnteringRoom = null!;
+    public static event Action<string> OnEnteringRoom;
 
-    public static event Action<string> OnJoiningRoom = null!;
+    public static event Action<string> OnJoiningRoom;
 
-    public static event Action OnSuccessJoinedRoom = null!;
+    public static event Action OnSuccessJoinedRoom;
 
-    public static event Action<string> OnPlayerJoined = null!;
+    public static event Action<string> OnPlayerJoined;
 
-    public static event Action<string> OnPlayerSwitchedAvatar = null!;
+    public static event Action<string> OnPlayerSwitchedAvatar;
 
-    public static event Action<string> OnKeywordsExceeded = null!;
+    public static event Action<string> OnPlayerLeft;
 
-    public static event Action<string> OnPlayerLeft = null!;
+    public static event Action OnLeftRoom;
 
-    public static event Action OnLeftRoom = null!;
+    public static event Action<string> OnDisconnected;
 
-    public static event Action<string> OnDisconnected = null!;
+    public static event Action<string> OnApplicationQuit;
 
-    public static event Action<string> OnApplicationQuit = null!;
-
-    public static void GetEvents(string input)
+    public static void GetEvents(string? input)
     {
-        switch (input)
-        {
-            case not null when input.Contains("[Behaviour]"):
+        if (input == null) return;
 
-                if (input.Contains("User Authenticated:")) OnUserAuthenticated(input);
+        if (input.Contains("[Behaviour]"))
+            HandleBehaviourEvents(input);
+        else if (input.Contains("User Authenticated")) InvokeEvent(OnUserAuthenticated, input);
+        else if (input.Contains("VRCApplication: OnApplicationQuit at")) InvokeEvent(OnApplicationQuit, input);
+    }
 
-                if (input.Contains("Using network server version:")) OnServerVersion(input);
+    private static void HandleBehaviourEvents(string input)
+    {
+        if (input.Contains("Using network server version")) InvokeEvent(OnServerVersion, input);
 
-                if (input.Contains("Switching to network")) OnSwitchingToNetwork(input);
+        if (input.Contains("Switching to network")) InvokeEvent(OnSwitchingToNetwork, input);
 
-                if (input.Contains("Entering Room:")) OnEnteringRoom(input);
+        if (input.Contains("Entering Room:")) InvokeEvent(OnEnteringRoom, input);
 
-                if (input.Contains("Joining wrld_")) OnJoiningRoom(input);
+        if (input.Contains("Joining wrld_")) InvokeEvent(OnJoiningRoom, input);
 
-                if (input.Contains("Successfully joined room")) OnSuccessJoinedRoom();
+        if (input.Contains("Successfully joined room")) InvokeEvent(OnSuccessJoinedRoom);
 
-                if (input.Contains("OnPlayerJoined")) OnPlayerJoined(input);
+        if (input.Contains("OnPlayerJoined")) InvokeEvent(OnPlayerJoined, input);
 
-                if (input.Contains("to avatar")) OnPlayerSwitchedAvatar(input);
+        if (input.Contains("to avatar")) InvokeEvent(OnPlayerSwitchedAvatar, input);
 
-                if (input.Contains("shader global keywords exceeded")) OnKeywordsExceeded(input);
+        if (input.Contains("OnPlayerLeft")) InvokeEvent(OnPlayerLeft, input);
 
-                if (input.Contains("OnPlayerLeft")) OnPlayerLeft(input);
+        if (input.Contains("OnLeftRoom")) InvokeEvent(OnLeftRoom);
 
-                if (input.Contains("OnLeftRoom")) OnLeftRoom();
+        if (input.Contains("OnDisconnected")) InvokeEvent(OnDisconnected, input);
+    }
 
-                if (input.Contains("OnDisconnected")) OnDisconnected(input);
-                break;
+    private static void InvokeEvent(Action<string>? actionEvent, string input)
+    {
+        actionEvent?.Invoke(input);
+    }
 
-            case not null when input.Contains("VRCApplication: OnApplicationQuit at"):
-                OnApplicationQuit(input);
-                break;
-        }
+    private static void InvokeEvent(Action? actionEvent)
+    {
+        actionEvent?.Invoke();
     }
 }

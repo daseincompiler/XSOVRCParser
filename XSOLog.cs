@@ -5,20 +5,26 @@ namespace XSOVRCParser;
 
 internal static partial class XSOLog
 {
-    public static readonly StringBuilder Log = new();
-
-    private static string _logDateTime = null!, _errorDateTime = null!;
-
-    private static readonly string[] IgnoredErrors = { "AmplitudeAPI", "cdp.cloud.unity3d.com", "[API]", "Curl error",
-        "[AVProVideo]", "NewFeatureCallouts", "Failed to get texture", "Error auto blending a playable at slot",
-        "Can't push runtime controller onto a null avatar animator", "could not use Station"};
-
     public enum InputType
     {
         Log,
         Warning,
         Error
     }
+
+    public static readonly StringBuilder Log = new();
+    private static DateTime? _logDateTime, _errorDateTime;
+
+    private static readonly string[] IgnoredErrors =
+    {
+        "AmplitudeAPI", "cdp.cloud.unity3d.com", "[API]", "Curl error",
+        "[AVProVideo]", "NewFeatureCallouts", "Failed to get texture", "Error auto blending a playable at slot",
+        "Can't push runtime controller onto a null avatar animator", "could not use Station",
+        "Could not locate Station",
+        "Material doesn't have a texture property", "Failed to find translation for term",
+        "Failed to find translation for key",
+        "Attempted to access IsInVRMode before tracking was initialized!"
+    };
 
     //https://stackoverflow.com/a/19436622 C++ would be probably way more ideal, but I don't have such skills yet...
     // TODO: fails to get anything that's more than one line because of the current regex
@@ -48,62 +54,50 @@ internal static partial class XSOLog
 
     public static void ConsoleWrite(InputType inputType, string s)
     {
-        // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
+        DateTime tempDateTime; // Intermediate non-nullable DateTime variable
+
         switch (inputType)
         {
-            case InputType.Log:
-                _logDateTime = LogRegex().Match(s).Groups[1].Value;
+            case InputType.Log when DateTime.TryParse(LogRegex().Match(s).Groups[1].Value, out tempDateTime):
+                _logDateTime = tempDateTime;
                 break;
 
-            // case InputType.Warning:
-            //     _warningDateTime = Regex.Match(s, @"(.+\S) Warning").Groups[1].Value;
-            //     break;
+            case InputType.Error when DateTime.TryParse(ErrorRegex().Match(s).Groups[1].Value, out tempDateTime):
+                _errorDateTime = tempDateTime;
+                break;
 
-            case InputType.Error:
-                _errorDateTime = ErrorRegex().Match(s).Groups[1].Value;
+            case InputType.Warning:
                 break;
         }
 
-        var match = ErrorMessageRegex().Match(s).Groups[1].Value;
+        var errorMessage = ErrorMessageRegex().Match(s).Groups[1].Value;
 
-        if (string.IsNullOrEmpty(match)) return;
+        if (string.IsNullOrWhiteSpace(errorMessage) || IgnoredErrors.Any(t => errorMessage.Contains(t))) return;
 
-        if (IgnoredErrors.Any(t => match.Contains(t)))
-        {
-            return;
-        }
-
-        PrintError(match);
+        PrintError(errorMessage);
     }
 
     public static void PrintLog(Match regexMatch, ConsoleColor consoleColor = ConsoleColor.Cyan)
     {
-        if (regexMatch == null) throw new NullReferenceException("Regex Match is null");
-
+        if (regexMatch == null) throw new NullReferenceException(nameof(regexMatch));
         PrintLog(regexMatch.Value, consoleColor);
     }
 
-    public static void PrintLog(string value, ConsoleColor consoleColor)
+    public static void PrintLog(string value, ConsoleColor consoleColor = ConsoleColor.Cyan)
     {
-        DateTime.TryParse(_logDateTime, out var dateTime);
-
-        // //might be inaccurate maybe?
-        // XSONotifications.ShouldNotify = Initializer.StartUpDateTime.Minute.Equals(dateTime.Minute);
-
-        Log.AppendLine($"[{dateTime}/PrintLog]: {value}\n");
-
-        Console.ForegroundColor = consoleColor;
-        Console.WriteLine($"{dateTime} Log - {value}\n");
+        AppendToLog($"[{_logDateTime}/PrintLog]: {value}", consoleColor);
     }
 
     private static void PrintError(string text)
     {
-        DateTime.TryParse(_errorDateTime, out var dateTime);
+        AppendToLog($"[{_errorDateTime}/PrintError]: {text}", ConsoleColor.Red);
+    }
 
-        Log.AppendLine($"[{dateTime}/PrintError]: {text}\n");
-
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"{dateTime} Error - {text}\n");
+    private static void AppendToLog(string message, ConsoleColor color)
+    {
+        Log.AppendLine($"{message}\n");
+        Console.ForegroundColor = color;
+        Console.WriteLine($"{message}\n");
     }
 
     [GeneratedRegex(@"(.+\S) Log")]
