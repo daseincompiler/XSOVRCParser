@@ -1,4 +1,5 @@
 # XSOVRCParser
-WIP VRChat output log parser for more advanced users. I mostly use it for real time monitoring of avatar switches (against avatar crashers) and errors, but also has some quality of life 
-features such as instance & player joins, leaves. Implementation of real time notifications in game through XSO notifications API is work in progress & doesn't work rn how it's supposed to. 
-![image](https://github.com/aabbey-stack/XSOVRCParser/assets/61197745/ac299c5a-93fc-4ccd-b17e-51c11fde856a)
+A tool that continuously monitors, parses, and elegantly displays VRChat output logs in a console window. Mostly useful when you have more debug levels enabled. I personally use it for practice and logging avatar switches (really useful for finding avatar crashers).
+
+
+![WindowsTerminal_IdzTbRfDLV](https://github.com/sneezingabbey/XSOVRCParser/assets/61197745/17b9a090-e3f8-4869-b768-72a38a39a5f6)
